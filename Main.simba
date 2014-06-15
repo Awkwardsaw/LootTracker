@@ -1,8 +1,10 @@
 program new;
-
+//To try it out thus far, just hit play!
 const
-  monstername = 'hobgoblin';
-  monsterhp = 29;
+  monstername = 'hobgoblin'; //name of monster you are killing
+  monsterhp = 29; //monster hp
+  curlootname = 'herb'; //name of loot, try changing around the names
+  curlootamount = 1; // amount of loot, try changing the number
 
 type
   TMonsterData = record
@@ -24,24 +26,24 @@ var
 
 procedure SaveMonsterData;
 var
-  lootname, lootamount : string;
+  slootname, slootamount : string;
   i : integer;
   tsa : TStringArray;
 begin
-  lootname := Implode(';', CurrMonster.lootname);
+  slootname := Implode(';', CurrMonster.lootname);
 
   setlength(tsa, length(CurrMonster.lootamount));
   for i := 0 to high(CurrMonster.lootamount) do
     tsa[i] := tostr(CurrMonster.lootamount[i]);
-  lootamount := Implode(';', tsa);
+  slootamount := Implode(';', tsa);
 
   WriteINI(CurrMonster.name, 'name', CurrMonster.name, scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'hp', tostr(CurrMonster.hp), scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'killed', tostr(CurrMonster.killed), scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'exp', tostr(CurrMonster.exp), scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'hpexp', tostr(CurrMonster.hpexp), scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootname', lootname, scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootamount', lootamount, scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootname', slootname, scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootamount', slootamount, scriptpath + 'MonsterData.ini');
 end;
 
 procedure LoadMonsterData;
@@ -138,8 +140,8 @@ end;
 
 begin
   LoadMonsterData;
-  writeln(CurrMonster);
-  UpdateMonsterData('limpwurt root', 1);
-  writeln(CurrMonster);
+  writeln('before: ' + tostr(CurrMonster));
+  UpdateMonsterData(curlootname, curlootamount);
+  writeln('after: ' + tostr(CurrMonster));
   SaveMonsterData;
 end.
