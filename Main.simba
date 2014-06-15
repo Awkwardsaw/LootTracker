@@ -35,13 +35,13 @@ begin
     tsa[i] := tostr(CurrMonster.lootamount[i]);
   lootamount := Implode(';', tsa);
 
-  WriteINI(CurrMonster.name, 'name', CurrMonster.name, 'Scripts\Loot Tracker\MonsterData.ini');
-  WriteINI(CurrMonster.name, 'hp', tostr(CurrMonster.hp), 'Scripts\Loot Tracker\MonsterData.ini');
-  WriteINI(CurrMonster.name, 'killed', tostr(CurrMonster.killed), 'Scripts\Loot Tracker\MonsterData.ini');
-  WriteINI(CurrMonster.name, 'exp', tostr(CurrMonster.exp), 'Scripts\Loot Tracker\MonsterData.ini');
-  WriteINI(CurrMonster.name, 'hpexp', tostr(CurrMonster.hpexp), 'Scripts\Loot Tracker\MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootname', lootname, 'Scripts\Loot Tracker\MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootamount', lootamount, 'Scripts\Loot Tracker\MonsterData.ini');
+  WriteINI(CurrMonster.name, 'name', CurrMonster.name, scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hp', tostr(CurrMonster.hp), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'killed', tostr(CurrMonster.killed), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'exp', tostr(CurrMonster.exp), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hpexp', tostr(CurrMonster.hpexp), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootname', lootname, scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootamount', lootamount, scriptpath + 'MonsterData.ini');
 end;
 
 procedure LoadMonsterData;
@@ -137,4 +137,9 @@ end;
 
 
 begin
+  LoadMonsterData;
+  writeln(CurrMonster);
+  UpdateMonsterData('limpwurt root', 1);
+  writeln(CurrMonster);
+  SaveMonsterData;
 end.
