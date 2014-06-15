@@ -1,0 +1,140 @@
+program new;
+
+const
+  monstername = 'hobgoblin';
+  monsterhp = 29;
+
+type
+  TMonsterData = record
+    name : string; //name of monster
+    hp : integer; //amount of hp monster has
+    killed : integer; //amount of monster killed
+    exp : integer; //amount of combat xp gained
+    hpexp: integer;//amount of hp xp gained
+    lootname : TStringArray; //array of names for the loot monster drops
+    lootamount : TIntegerArray; //array of the amount of loot each monster drops
+
+ end;
+
+ TMonsterArray = Array of TMonsterData;
+
+var
+  CurrMonster : TMonsterData;
+//this will update the MonsterData type by adding 1 kill, and set amount of loot
+
+procedure SaveMonsterData;
+var
+  lootname, lootamount : string;
+  i : integer;
+  tsa : TStringArray;
+begin
+  lootname := Implode(';', CurrMonster.lootname);
+
+  setlength(tsa, length(CurrMonster.lootamount));
+  for i := 0 to high(CurrMonster.lootamount) do
+    tsa[i] := tostr(CurrMonster.lootamount[i]);
+  lootamount := Implode(';', tsa);
+
+  WriteINI(CurrMonster.name, 'name', CurrMonster.name, 'Scripts\Loot Tracker\MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hp', tostr(CurrMonster.hp), 'Scripts\Loot Tracker\MonsterData.ini');
+  WriteINI(CurrMonster.name, 'killed', tostr(CurrMonster.killed), 'Scripts\Loot Tracker\MonsterData.ini');
+  WriteINI(CurrMonster.name, 'exp', tostr(CurrMonster.exp), 'Scripts\Loot Tracker\MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hpexp', tostr(CurrMonster.hpexp), 'Scripts\Loot Tracker\MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootname', lootname, 'Scripts\Loot Tracker\MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootamount', lootamount, 'Scripts\Loot Tracker\MonsterData.ini');
+end;
+
+procedure LoadMonsterData;
+var
+  lootamount : string;
+  i : integer;
+  tsa : TStringArray;
+begin
+  CurrMonster.name := monstername;
+  if ReadINI(CurrMonster.name, 'name', scriptpath + 'MonsterData.ini') = '' then
+  begin
+    CurrMonster.hp := monsterhp; //amount of hp monster has
+    exit;
+  end;
+
+  CurrMonster.hp := strtoint(ReadINI(CurrMonster.name, 'hp', scriptpath + 'MonsterData.ini'));
+  CurrMonster.killed := strtoint(ReadINI(CurrMonster.name, 'killed', scriptpath + 'MonsterData.ini'));
+  CurrMonster.exp := strtoint(ReadINI(CurrMonster.name, 'exp', scriptpath + 'MonsterData.ini'));
+  CurrMonster.hpexp := strtoint(ReadINI(CurrMonster.name, 'hpexp', scriptpath + 'MonsterData.ini'));
+
+  CurrMonster.lootname := Explode(';', ReadINI(CurrMonster.name, 'lootname', scriptpath + 'MonsterData.ini'));
+
+  lootamount := ReadINI(CurrMonster.name, 'lootamount', scriptpath + 'MonsterData.ini');
+  tsa := explode(';', lootamount);
+  setlength(CurrMonster.lootamount, length(tsa));
+  for i := 0 to high(tsa) do
+    CurrMonster.lootamount[i] := strtoint(tsa[i]);
+end;
+
+procedure ClearAllMonsterData;
+begin
+  currmonster.name := monstername;
+  WriteINI(CurrMonster.name, 'name', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hp', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'killed', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'exp', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hpexp', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootname', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootamount', '', scriptpath + 'MonsterData.ini');
+end;
+
+function GetIndexOfTSA(tsa : TStringArray; search : string) : integer;
+var i : integer;
+begin
+  if length(tsa) < 1 then
+  begin
+    result := -1;
+    exit;
+  end;
+  for i := 0 to high(tsa) do
+  begin
+    if tsa[i] = search then
+    begin
+      result := i;
+      break;
+    end;
+    if i = high(tsa) then result := -1;
+  end;
+end;
+
+procedure AppendStringArray(var tsa : TStringArray; s : string);
+begin
+  setlength(tsa, length(tsa) + 1);
+  tsa[high(tsa)] := s;
+end;
+
+procedure AppendIntegerArray(var tia : TIntegerArray; i : integer);
+begin
+  setlength(tia, length(tia) + 1);
+  tia[high(tia)] := i;
+end;
+
+procedure UpdateMonsterData(lootname : string; lootamount : integer);
+var
+  index : integer;
+begin
+  inc(currmonster.killed);
+  incex(currmonster.exp, currmonster.hp * 4);
+  incex(currmonster.hpexp, floor(currmonster.hp * 1.3));
+  if lootname <> '' then
+  begin
+    index := GetIndexOfTSA(currmonster.lootname, lootname);
+    if index = -1 then
+    begin
+      AppendStringArray(currmonster.lootname, lootname);
+      AppendIntegerArray(currmonster.lootamount, lootamount);
+      exit;
+    end;
+    currmonster.lootamount[index] := currmonster.lootamount[index] + lootamount;
+  end;
+end;
+
+
+
+begin
+end.
