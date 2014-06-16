@@ -1,10 +1,5 @@
 program new;
 //To try it out thus far, just hit play!
-const
-  monstername = 'hobgoblin'; //name of monster you are killing
-  monsterhp = 29; //monster hp
-  curlootname = 'herb'; //name of loot, try changing around the names
-  curlootamount = 1; // amount of loot, try changing the number
 
 type
   TMonsterData = record
@@ -22,68 +17,18 @@ type
 
 var
   CurrMonster : TMonsterData;
-//this will update the MonsterData type by adding 1 kill, and set amount of loot
-
-procedure SaveMonsterData;
 var
-  slootname, slootamount : string;
-  i : integer;
-  tsa : TStringArray;
-begin
-  slootname := Implode(';', CurrMonster.lootname);
-
-  setlength(tsa, length(CurrMonster.lootamount));
-  for i := 0 to high(CurrMonster.lootamount) do
-    tsa[i] := tostr(CurrMonster.lootamount[i]);
-  slootamount := Implode(';', tsa);
-
-  WriteINI(CurrMonster.name, 'name', CurrMonster.name, scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'hp', tostr(CurrMonster.hp), scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'killed', tostr(CurrMonster.killed), scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'exp', tostr(CurrMonster.exp), scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'hpexp', tostr(CurrMonster.hpexp), scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootname', slootname, scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootamount', slootamount, scriptpath + 'MonsterData.ini');
-end;
-
-procedure LoadMonsterData;
-var
-  lootamount : string;
-  i : integer;
-  tsa : TStringArray;
-begin
-  CurrMonster.name := monstername;
-  if ReadINI(CurrMonster.name, 'name', scriptpath + 'MonsterData.ini') = '' then
-  begin
-    CurrMonster.hp := monsterhp; //amount of hp monster has
-    exit;
-  end;
-
-  CurrMonster.hp := strtoint(ReadINI(CurrMonster.name, 'hp', scriptpath + 'MonsterData.ini'));
-  CurrMonster.killed := strtoint(ReadINI(CurrMonster.name, 'killed', scriptpath + 'MonsterData.ini'));
-  CurrMonster.exp := strtoint(ReadINI(CurrMonster.name, 'exp', scriptpath + 'MonsterData.ini'));
-  CurrMonster.hpexp := strtoint(ReadINI(CurrMonster.name, 'hpexp', scriptpath + 'MonsterData.ini'));
-
-  CurrMonster.lootname := Explode(';', ReadINI(CurrMonster.name, 'lootname', scriptpath + 'MonsterData.ini'));
-
-  lootamount := ReadINI(CurrMonster.name, 'lootamount', scriptpath + 'MonsterData.ini');
-  tsa := explode(';', lootamount);
-  setlength(CurrMonster.lootamount, length(tsa));
-  for i := 0 to high(tsa) do
-    CurrMonster.lootamount[i] := strtoint(tsa[i]);
-end;
-
-procedure ClearAllMonsterData;
-begin
-  currmonster.name := monstername;
-  WriteINI(CurrMonster.name, 'name', '', scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'hp', '', scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'killed', '', scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'exp', '', scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'hpexp', '', scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootname', '', scriptpath + 'MonsterData.ini');
-  WriteINI(CurrMonster.name, 'lootamount', '', scriptpath + 'MonsterData.ini');
-end;
+  DsgnForm:TForm;
+  Labels: Array [0..3] of TLabel;
+  Edits: Array [0..2] of TEdit;
+  AddButton, LoadButton: TButton;
+  MonstersCombo: TComboBox;
+  LabelArr : Array of String;
+const
+  default = 'Times New Roman';
+  EDIT_MONSHP = 0;
+  EDIT_LOOTNAME = 1;
+  EDIT_LOOTAMOUNT = 2;
 
 function GetIndexOfTSA(tsa : TStringArray; search : string) : integer;
 var i : integer;
@@ -116,6 +61,74 @@ begin
   tia[high(tia)] := i;
 end;
 
+procedure SaveMonsterData;
+var
+  slootname, slootamount : string;
+  i : integer;
+  tsa : TStringArray;
+begin
+  slootname := Implode(';', CurrMonster.lootname);
+
+  setlength(tsa, length(CurrMonster.lootamount));
+  for i := 0 to high(CurrMonster.lootamount) do
+    tsa[i] := tostr(CurrMonster.lootamount[i]);
+  slootamount := Implode(';', tsa);
+
+  WriteINI(CurrMonster.name, 'name', CurrMonster.name, scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hp', tostr(CurrMonster.hp), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'killed', tostr(CurrMonster.killed), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'exp', tostr(CurrMonster.exp), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hpexp', tostr(CurrMonster.hpexp), scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootname', slootname, scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootamount', slootamount, scriptpath + 'MonsterData.ini');
+end;
+
+procedure LoadMonsterData;
+var
+  lootamount : string;
+  i, amount, hp : integer;
+  tsa : TStringArray;
+begin
+  CurrMonster.name := MonstersCombo.Caption;
+  if ReadINI(CurrMonster.name, 'name', scriptpath + 'MonsterData.ini') = '' then
+  begin
+    try
+      amount := strtoint(Edits[EDIT_LOOTAMOUNT].caption);
+      hp := strtoint(Edits[EDIT_MONSHP].caption);
+    except
+      showmessage('WARNING: you did not enter a valid integer, try again!');
+      exit;
+    end;
+    AppendStringArray(CurrMonster.lootname, Edits[EDIT_LOOTNAME].caption);
+    CurrMonster.hp := hp; //amount of hp monster has
+    AppendIntegerArray(CurrMonster.lootamount, amount);
+    exit;
+  end;
+  CurrMonster.hp := strtoint(ReadINI(CurrMonster.name, 'hp', scriptpath + 'MonsterData.ini'));
+  CurrMonster.killed := strtoint(ReadINI(CurrMonster.name, 'killed', scriptpath + 'MonsterData.ini'));
+  CurrMonster.exp := strtoint(ReadINI(CurrMonster.name, 'exp', scriptpath + 'MonsterData.ini'));
+  CurrMonster.hpexp := strtoint(ReadINI(CurrMonster.name, 'hpexp', scriptpath + 'MonsterData.ini'));
+
+  CurrMonster.lootname := Explode(';', ReadINI(CurrMonster.name, 'lootname', scriptpath + 'MonsterData.ini'));
+
+  lootamount := ReadINI(CurrMonster.name, 'lootamount', scriptpath + 'MonsterData.ini');
+  tsa := explode(';', lootamount);
+  setlength(CurrMonster.lootamount, length(tsa));
+  for i := 0 to high(tsa) do
+    CurrMonster.lootamount[i] := strtoint(tsa[i]);
+end;
+
+procedure ClearAllMonsterData;
+begin
+  WriteINI(CurrMonster.name, 'name', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hp', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'killed', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'exp', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'hpexp', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootname', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'lootamount', '', scriptpath + 'MonsterData.ini');
+end;
+
 procedure UpdateMonsterData(lootname : string; lootamount : integer);
 var
   index : integer;
@@ -137,11 +150,183 @@ begin
 end;
 
 
+function GetMonsterSections : TStringArray;
+var
+  i, size : integer;
+  s : string;
+begin
+  i := OpenFile(scriptpath + 'MonsterData.ini', true);
+  size := FileSize(i);
+  if not ReadFileString(i, s, size) then
+  begin
+    writeln('Failed to Read MonsterData.ini!');
+    closefile(i);
+    exit;
+  end;
+
+  result := MultiBetween(s, '[', ']');
+  closefile(i);
+end;
+
+procedure HandleButton(Sender: TObject);
+var
+  amount : integer;
+begin
+  try
+    amount := strtoint(Edits[EDIT_LOOTAMOUNT].caption);
+  except
+    showmessage('WARNING: you did not enter a valid integer, try again!');
+    exit;
+  end;
+  LoadMonsterData;
+  //writeln(CurrMonster);
+  UpdateMonsterData(Edits[EDIT_LOOTNAME].caption, amount);
+  writeln(CurrMonster);
+  SaveMonsterData;
+  writeln('Updated drop log!');
+end;
+
+procedure HandleLoadButton(Sender: TObject);
+var
+  tsa : TStringArray;
+  i : integer;
+begin
+  tsa := GetMonsterSections;
+  MonstersCombo.ITEMS.Clear;
+  for i := 0 to high(tsa) do
+    MonstersCombo.ITEMS.Add(tsa[i]);
+
+end;
+
+procedure LoadMonsterForm(Sender: TObject);
+var
+  s : string;
+begin
+  edits[EDIT_MONSHP].caption := ReadINI(MonstersCombo.Caption, 'hp', scriptpath + 'MonsterData.ini')
+end;
+
+procedure InitForm;
+var
+  i : integer;
+begin
+//DsgnForm\\
+ DsgnForm:=TForm.Create(nil);
+  with DsgnForm do
+    begin
+      Caption:='DsgnForm';
+      Left:=217;
+      Top:=309;
+      Width:=320;
+      Height:=240;
+      Font.Name:=default;
+      Font.Color:=clDefault;
+      Font.Size:=0;
+  end;
+//TLabel0\\
+ LabelArr := ['Monster Name:', 'Monster HP:', 'Loot name:', 'Loot Amount:'];
+ for i := 0 to high(Labels) do
+ begin
+   Labels[i]:=TLabel.Create(DsgnForm);
+    with Labels[i] do
+      begin
+        Parent:=DsgnForm;
+        Caption:=LabelArr[i];
+        Left:=2;
+        Top:=10 + (i * 30);
+        Width:=42;
+        Height:=16;
+        Font.Name:=default;
+        Font.Color:=clDefault;
+        Font.Size:=0;
+    end;
+ end;
+//TEdit1\\
+ for i := 0 to high(Edits) do
+ begin
+   Edits[i]:=TEdit.Create(DsgnForm);
+    with Edits[i] do
+      begin
+        Parent:=DsgnForm;
+        Text:='';
+        Left:=100;
+        Top:=37 + (i * 30);
+        Width:=80;
+        Height:=23;
+        Font.Name:=default;
+        Font.Color:=clDefault;
+        Font.Size:=0;
+      end
+ end;
+ //TButton\\
+  LoadButton:=TButton.Create(DsgnForm);
+  with LoadButton do
+  begin
+    Parent:=DsgnForm;
+    Caption:= 'Load Monsters';
+    Left:=220;
+    Top:=7;
+    Width:=75;
+    Height:=25;
+    OnClick:=@HandleLoadButton;
+    //Font.Name:=default;
+    Font.Color:=clDefault;
+    Font.Size:=0;
+  end;
+  AddButton:=TButton.Create(DsgnForm);
+  with AddButton do
+  begin
+    Parent:=DsgnForm;
+    Caption:= 'Add to list';
+    Left:=220;
+    Top:=70;
+    Width:=75;
+    Height:=25;
+    OnClick:=@HandleButton;
+    //Font.Name:=default;
+    Font.Color:=clDefault;
+    Font.Size:=0;
+  end;
+//TComboBox2\\
+ MonstersCombo:=TComboBox.Create(DsgnForm);
+  with MonstersCombo do
+    begin
+      Parent:=DsgnForm;
+      Left:=100;
+      Top:=7;
+      Width:=100;
+      Height:=23;
+      Font.Name:=default;
+      Font.Color:=clDefault;
+      ONCHANGE := @LoadMonsterForm;
+      Font.Size:=0;
+  end;
+end;
+
+procedure SafeInitForm;
+var
+  v: TVariantArray;
+begin
+  setarraylength(V, 0);
+  ThreadSafeCall('InitForm', v);
+end;
+
+
+procedure ShowFormModal;
+begin
+  DsgnForm.ShowModal;
+end;
+
+
+procedure SafeShowFormModal;
+var
+  v: TVariantArray;
+begin
+  SetArrayLength(V, 0);
+  ThreadSafeCall('ShowFormModal', v);
+end;
+
 
 begin
-  LoadMonsterData;
-  writeln('before: ' + tostr(CurrMonster));
-  UpdateMonsterData(curlootname, curlootamount);
-  writeln('after: ' + tostr(CurrMonster));
-  SaveMonsterData;
+  SafeInitForm;
+  SafeShowFormModal;
 end.
