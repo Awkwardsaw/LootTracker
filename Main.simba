@@ -10,7 +10,7 @@ type
     hpexp: integer;//amount of hp xp gained
     lootname : TStringArray; //array of names for the loot monster drops
     lootamount : TIntegerArray; //array of the amount of loot each monster drops
-
+    timeslooted : integer;
  end;
 
  TMonsterArray = Array of TMonsterData;
@@ -20,15 +20,16 @@ var
 var
   DsgnForm:TForm;
   Labels: Array [0..3] of TLabel;
-  Edits: Array [0..2] of TEdit;
+  StatLabels, LootLabels: Array of TLabel;
+  Edits: Array [0..1] of TEdit;
   AddButton, LoadButton: TButton;
-  MonstersCombo: TComboBox;
-  LabelArr : Array of String;
+  MonstersCombo, LootCombo: TComboBox;
+  LabelArr, StatLabelArr, LootLabelArr : Array of String;
+  LootListBox: TListBox;
 const
   default = 'Times New Roman';
   EDIT_MONSHP = 0;
-  EDIT_LOOTNAME = 1;
-  EDIT_LOOTAMOUNT = 2;
+  EDIT_LOOTAMOUNT = 1;
 
 function GetIndexOfTSA(tsa : TStringArray; search : string) : integer;
 var i : integer;
@@ -61,9 +62,37 @@ begin
   tia[high(tia)] := i;
 end;
 
+procedure AppendLootLabelArray;
+var
+  i : integer;
+begin
+  if currmonster.name > '' then
+  begin
+  try
+  setlength(LootLabels, length(LootLabels) + 1);
+  i := high(LootLabels);
+  LootLabels[i] :=  TLabel.Create(DsgnForm);
+    with LootLabels[i] do
+      begin
+        Parent:=DsgnForm;
+        Left:=2;
+        Top:=250 + (i * 20);
+        Width:=42;
+        Height:=16;
+        Font.Name:=default;
+        Font.Color:=clDefault;
+        Font.Size:=0;
+        Caption:= CurrMonster.lootname[i] + ': ' + tostr(CurrMonster.lootamount[i]);
+    end;
+  except
+    writeln('Failed to load loot labels!');
+  end;
+  end;
+end;
+
 procedure SaveMonsterData;
 var
-  slootname, slootamount : string;
+  SLootName, SLootAmount : string;
   i : integer;
   tsa : TStringArray;
 begin
@@ -81,6 +110,7 @@ begin
   WriteINI(CurrMonster.name, 'hpexp', tostr(CurrMonster.hpexp), scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'lootname', slootname, scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'lootamount', slootamount, scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'timeslooted', tostr(CurrMonster.timeslooted), scriptpath + 'MonsterData.ini');
 end;
 
 procedure LoadMonsterData;
@@ -99,9 +129,10 @@ begin
       showmessage('WARNING: you did not enter a valid integer, try again!');
       exit;
     end;
-    AppendStringArray(CurrMonster.lootname, Edits[EDIT_LOOTNAME].caption);
+    AppendStringArray(CurrMonster.lootname, LootCombo.caption);
     CurrMonster.hp := hp; //amount of hp monster has
     AppendIntegerArray(CurrMonster.lootamount, amount);
+    MonstersCombo.ITEMS.Add(CurrMonster.name);
     exit;
   end;
   CurrMonster.hp := strtoint(ReadINI(CurrMonster.name, 'hp', scriptpath + 'MonsterData.ini'));
@@ -116,6 +147,8 @@ begin
   setlength(CurrMonster.lootamount, length(tsa));
   for i := 0 to high(tsa) do
     CurrMonster.lootamount[i] := strtoint(tsa[i]);
+
+  CurrMonster.timeslooted := strtoint(ReadINI(CurrMonster.name, 'timeslooted', scriptpath + 'MonsterData.ini'));
 end;
 
 procedure ClearAllMonsterData;
@@ -127,6 +160,7 @@ begin
   WriteINI(CurrMonster.name, 'hpexp', '', scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'lootname', '', scriptpath + 'MonsterData.ini');
   WriteINI(CurrMonster.name, 'lootamount', '', scriptpath + 'MonsterData.ini');
+  WriteINI(CurrMonster.name, 'timeslooted', '', scriptpath + 'MonsterData.ini');
 end;
 
 procedure UpdateMonsterData(lootname : string; lootamount : integer);
@@ -139,6 +173,7 @@ begin
   if lootname <> '' then
   begin
     index := GetIndexOfTSA(currmonster.lootname, lootname);
+    inc(currmonster.timeslooted);
     if index = -1 then
     begin
       AppendStringArray(currmonster.lootname, lootname);
@@ -170,7 +205,8 @@ end;
 
 procedure HandleButton(Sender: TObject);
 var
-  amount : integer;
+  amount, i : integer;
+  tsa : TStringArray;
 begin
   try
     amount := strtoint(Edits[EDIT_LOOTAMOUNT].caption);
@@ -178,46 +214,92 @@ begin
     showmessage('WARNING: you did not enter a valid integer, try again!');
     exit;
   end;
+
   LoadMonsterData;
-  //writeln(CurrMonster);
-  UpdateMonsterData(Edits[EDIT_LOOTNAME].caption, amount);
-  writeln(CurrMonster);
+  UpdateMonsterData(LootCombo.caption, amount);
   SaveMonsterData;
-  writeln('Updated drop log!');
-end;
+  tsa := explode(#13#10, LootCombo.ITEMS.Text)
+  if GetIndexOfTSA(tsa, LootCombo.caption) = -1 then
+    LootCombo.ITEMS.Add(LootCombo.caption);
 
-procedure HandleLoadButton(Sender: TObject);
-var
-  tsa : TStringArray;
-  i : integer;
-begin
-  tsa := GetMonsterSections;
-  MonstersCombo.ITEMS.Clear;
-  for i := 0 to high(tsa) do
-    MonstersCombo.ITEMS.Add(tsa[i]);
+  //////////////////////////////
+  // Handles the Stats labels //
+  //////////////////////////////
+  StatLabelArr := [
+  'Total Kills: ' + tostr(CurrMonster.killed),
+  'Combat XP Gained: ' + tostr(CurrMonster.exp),
+  'HP XP Gained: ' + tostr(CurrMonster.hpexp),
+  'Total Loot: ' + tostr(CurrMonster.timeslooted)];
 
+  for i := 0 to high(StatLabels) do
+    StatLabels[i].Caption:=StatLabelArr[i];
+
+  ///////////////////////////////
+  // handles the Loot List Box //
+  ///////////////////////////////
+  try
+    LootListBox.ITEMS.Clear;
+    if length(CurrMonster.name) > 0 then
+      for i := 0 to high(CurrMonster.lootname) do
+      begin
+
+        LootListBox.items.add(CurrMonster.lootname[i] + ': ' + tostr(CurrMonster.lootamount[i]));
+      end;
+  except
+    writeln('Failed to update loot label box!');
+  end;
 end;
 
 procedure LoadMonsterForm(Sender: TObject);
 var
   s : string;
+  tsa, test : TStringArray;
+  i : integer;
 begin
-  edits[EDIT_MONSHP].caption := ReadINI(MonstersCombo.Caption, 'hp', scriptpath + 'MonsterData.ini')
+  LoadMonsterData;
+  edits[EDIT_MONSHP].caption := ReadINI(CurrMonster.name, 'hp', scriptpath + 'MonsterData.ini');
+  tsa := explode(';', ReadINI(CurrMonster.name, 'lootname', scriptpath + 'MonsterData.ini'));
+  LootCombo.Caption := '';
+  LootCombo.ITEMS.Clear;
+  //LootCombo.ITEMS.Text;
+  for i := 0 to high(tsa) do
+    LootCombo.ITEMS.Add(tsa[i]);
+
+  StatLabelArr := [
+  'Total Kills: ' + tostr(CurrMonster.killed),
+  'Combat XP Gained: ' + tostr(CurrMonster.exp),
+  'HP XP Gained: ' + tostr(CurrMonster.hpexp),
+  'Total Loot: ' + tostr(CurrMonster.timeslooted)];
+  for i := 0 to high(StatLabels) do
+    StatLabels[i].Caption:=StatLabelArr[i];
+
+  try
+    LootListBox.ITEMS.Clear;
+    if length(CurrMonster.name) > 0 then
+      for i := 0 to high(CurrMonster.lootname) do
+      begin
+
+        LootListBox.items.add(CurrMonster.lootname[i] + ': ' + tostr(CurrMonster.lootamount[i]));
+      end;
+  except
+    writeln('Failed to update loot label box!');
+  end;
 end;
 
 procedure InitForm;
 var
   i : integer;
+  tsa : TStringArray;
 begin
 //DsgnForm\\
  DsgnForm:=TForm.Create(nil);
   with DsgnForm do
     begin
-      Caption:='DsgnForm';
+      Caption:='Awkward Loot Logger';
       Left:=217;
       Top:=309;
-      Width:=320;
-      Height:=240;
+      Width:=340;
+      Height:=370;
       Font.Name:=default;
       Font.Color:=clDefault;
       Font.Size:=0;
@@ -240,6 +322,25 @@ begin
         Font.Size:=0;
     end;
  end;
+//Stat labels\\
+setlength(StatLabels, length(LabelArr));
+ for i := 0 to high(StatLabels) do
+ begin
+   StatLabels[i]:=TLabel.Create(DsgnForm);
+    with StatLabels[i] do
+      begin
+        Parent:=DsgnForm;
+        Caption:= '';
+        Left:=175;
+        Top:=135 + (i * 20);
+        Width:=42;
+        Height:=16;
+        Font.Name:=default;
+        Font.Color:=clDefault;
+        Font.Size:=0;
+    end;
+ end;
+
 //TEdit1\\
  for i := 0 to high(Edits) do
  begin
@@ -249,7 +350,7 @@ begin
         Parent:=DsgnForm;
         Text:='';
         Left:=100;
-        Top:=37 + (i * 30);
+        Top:=37 + (i * 60);
         Width:=80;
         Height:=23;
         Font.Name:=default;
@@ -262,12 +363,12 @@ begin
   with LoadButton do
   begin
     Parent:=DsgnForm;
-    Caption:= 'Load Monsters';
-    Left:=220;
+    Caption:= 'Load Monster';
+    Left:=210;
     Top:=7;
-    Width:=75;
+    Width:=115;
     Height:=25;
-    OnClick:=@HandleLoadButton;
+    OnClick:=@LoadMonsterForm;
     //Font.Name:=default;
     Font.Color:=clDefault;
     Font.Size:=0;
@@ -276,7 +377,7 @@ begin
   with AddButton do
   begin
     Parent:=DsgnForm;
-    Caption:= 'Add to list';
+    Caption:= 'Update list';
     Left:=220;
     Top:=70;
     Width:=75;
@@ -286,7 +387,8 @@ begin
     Font.Color:=clDefault;
     Font.Size:=0;
   end;
-//TComboBox2\\
+//MonstersCombo\\
+
  MonstersCombo:=TComboBox.Create(DsgnForm);
   with MonstersCombo do
     begin
@@ -297,8 +399,42 @@ begin
       Height:=23;
       Font.Name:=default;
       Font.Color:=clDefault;
-      ONCHANGE := @LoadMonsterForm;
+      //ONDBLCLICK := @LoadMonsterForm;
       Font.Size:=0;
+  end;
+
+  tsa := GetMonsterSections;
+  MonstersCombo.ITEMS.Clear;
+  for i := 0 to high(tsa) do
+    MonstersCombo.ITEMS.Add(tsa[i]);
+
+  //LootCombo\\
+  LootCombo:=TComboBox.Create(DsgnForm);
+  with LootCombo do
+    begin
+      Parent:=DsgnForm;
+      Left:=100;
+      Top:=67;
+      Width:=100;
+      Height:=23;
+      Font.Name:=default;
+      Font.Color:=clDefault;
+      Font.Size:=0;
+  end;
+
+  //LootListBox\\
+ LootListBox:=TListBox.Create(DsgnForm);
+  with LootListBox do
+    begin
+      Parent:=DsgnForm;
+
+      Left:=2;
+      Top:=135;
+      Width:=150;
+      Height:= 200;
+      Font.Name:=default;
+      Font.Color:=clDefault;
+      Font.Size:=10;
   end;
 end;
 
